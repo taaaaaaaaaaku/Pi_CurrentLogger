@@ -9,6 +9,7 @@
 #  1. RaspberryPi Zero に，電流センサボードを接続します。
 #  2. RaspberryPi Zero に，所定のUSBメモリを接続します。
 #  3. 本プログラムを実行します。
+#    ※実行時に，引数として debug　を与えると，デバッグ出力を行います。
 #  4. 電源LEDがONになり，測定電流に合わせて，LEDバーが点灯します。
 #  5. タクトスイッチを押すと，電流ロギングを開始します。
 #    →ロギング中は，電源LEDが1秒ごとに点滅します。
@@ -28,6 +29,7 @@ from datetime import datetime,timedelta
 import RPi.GPIO as GPIO
 import time
 import smbus
+import sys
 
 # 各種パラメータ
 LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
@@ -188,6 +190,8 @@ class Thread_writeCSV(threading.Thread):
 
 if __name__ == "__main__":
 
+    args = sys.argv
+    
     print('ProgramStart')    
     try:
         # GPIO設定
@@ -214,12 +218,13 @@ if __name__ == "__main__":
         
         print_cnt = 0
         while 1:
-            # 定期的にコンソールに電流値出力
-            if print_cnt % 50 == 0:
-                amp = sensorThread.value
-                print ("Ampare: "),
-                print (amp)
-            print_cnt += 1
+            # [debugモード時]定期的にコンソールに電流値出力
+            if args[1:] == 'debug':
+                if print_cnt % 50 == 0:
+                    amp = sensorThread.value
+                    print ("Ampare: "),
+                    print (amp)
+                print_cnt += 1
 
             # LEDバーを，電流値に応じて点灯
             GPIO.output(LED_LV1, GPIO.LOW)
