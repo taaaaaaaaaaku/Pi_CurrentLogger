@@ -221,11 +221,11 @@ if __name__ == "__main__":
             # 電流値取得
             amp = sensorThread.value
             # [debugモード時]定期的にコンソールに電流値出力
-            if args[1:] == 'debug':
-                if print_cnt % 50 == 0:
-                    print ("Ampare: "),
-                    print (amp)
-                print_cnt += 1
+            if len(args) > 1 :
+                if args[1] == 'debug':
+                    if print_cnt % 10 == 0:
+                        print ('Current:'+str(amp)+ ' A')
+                    print_cnt += 1
 
             # LEDバーを，電流値に応じて点灯
             GPIO.output(LED_LV1, GPIO.LOW)
