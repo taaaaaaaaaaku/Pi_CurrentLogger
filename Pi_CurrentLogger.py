@@ -218,10 +218,11 @@ if __name__ == "__main__":
         
         print_cnt = 0
         while 1:
+            # 電流値取得
+            amp = sensorThread.value
             # [debugモード時]定期的にコンソールに電流値出力
             if args[1:] == 'debug':
                 if print_cnt % 50 == 0:
-                    amp = sensorThread.value
                     print ("Ampare: "),
                     print (amp)
                 print_cnt += 1
