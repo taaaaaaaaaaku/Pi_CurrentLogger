@@ -32,7 +32,7 @@ import smbus
 import sys
 
 # 各種パラメータ
-LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
+LOG_PATH = '/media/pi/MYUSB1/'   # CSVファイルの記録先フォルダ
 LOG_DIGITS = 6                  # ログデータ内での電流値の小数点以下桁数
 SHUNT_OHM = 10                  # シャント抵抗値[Ohm]
 CT_RATIO = 3000                 # CTセンサ倍率(実電流/センサ出力)
