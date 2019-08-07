@@ -9,7 +9,8 @@
 #  1. RaspberryPi Zero に，電流センサボードを接続します。
 #  2. RaspberryPi Zero に，所定のUSBメモリを接続します。
 #  3. 本プログラムを実行します。
-#    ※実行時に，引数として debug　を与えると，デバッグ出力を行います。
+#    ※実行時に，第一引数として debug　を与えると，デバッグ出力を行います。
+#    ※実行時に，第一or第二引数として数字を与えると，AMP_PER_LEDをその値で上書きします。
 #  4. 電源LEDがONになり，測定電流に合わせて，LEDバーが点灯します。
 #  5. タクトスイッチを押すと，電流ロギングを開始します。
 #    →ロギング中は，電源LEDが1秒ごとに点滅します。
@@ -209,6 +210,21 @@ class Thread_writeCSV(threading.Thread):
 if __name__ == "__main__":
 
     args = sys.argv
+
+    # 引数に指定があった場合，LEDバーの電流値を変更
+    if len(args) > 1 :
+        try:
+            # 第一引数に数字があれば取得
+            AMP_PER_LED = int(args[1])
+        except:
+            if len(args) > 2 :
+                try:
+                    # 第一引数に数字があれば取得
+                    AMP_PER_LED = int(args[2])
+                except:
+                    print('Cannot read AMP_PER_LED')
+                        
+                
     
     print('ProgramStart')    
     try:
