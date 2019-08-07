@@ -93,6 +93,12 @@ class Thread_readSensor(threading.Thread):
                     # 初期化処理失敗
                     self.isNeedInitialize = True
                     print('[ERROR]i2c.write_byte() has failed @ initializing')
+                    # LED高速点滅
+                    for i in range(3):
+                        GPIO.output(LED_POW,GPIO.LOW)
+                        time.sleep(0.1)
+                        GPIO.output(LED_POW,GPIO.HIGH)
+                        time.sleep(0.1)
                 else:
                     # 初期化処理成功
                     self.isNeedInitialize = False;
@@ -110,7 +116,13 @@ class Thread_readSensor(threading.Thread):
                 except:
                     self.isNeedInitialize = True
                     print('[ERROR]i2c.read_word_data() has failed @ reading')
-            
+                    # LED高速点滅
+                    for i in range(3):
+                        GPIO.output(LED_POW,GPIO.LOW)
+                        time.sleep(0.1)
+                        GPIO.output(LED_POW,GPIO.HIGH)
+                        time.sleep(0.1)
+            # 次ループ実施まで若干待機
             time.sleep(0.1)
         print('Thread_readSensor has finished')
 
