@@ -79,18 +79,36 @@ class Thread_readSensor(threading.Thread):
         threading.Thread.__init__(self)
         self.value = val         # 測定値
         self.kill_flag = False   # スレッド終了用フラグ
+        self.isNeedInitialize = True # 通信初期化要否判定
 
     #   センサ値読込メソッド：本関数を別スレッドにて実行。
     def run(self):
-        i2c.write_byte(ADC_ADDR,ADC_CONFIG_VAL) #ADCに設定値を書き込み
         while not(self.kill_flag):
-            data = i2c.read_word_data(ADC_ADDR,ADC_CONFIG_VAL)  # ADCからデータ取得
-            raw = swap16(int(hex(data),16))                     # エンディアン変更
-            raw_s = sign16(int(hex(raw),16))                    # 符号付きデータに変換
+            # 初回起動時や，通信エラー発生時は初期化処理を実施
+            if self.isNeedInitialize == True:
+                try:
+                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_VAL) #ADCに設定値を書き込み
+                except:
+                    # 初期化処理失敗
+                    self.isNeedInitialize = True
+                    print('[ERROR]i2c.write_byte() has failed @ initializing')
+                else:
+                    # 初期化処理成功
+                    self.isNeedInitialize = False;
+
+            # 初期化処理が完了している時のみ，受信処理を実行
+            if self.isNeedInitialize != True:
+                try:
+                    data = i2c.read_word_data(ADC_ADDR,ADC_CONFIG_VAL)  # ADCからデータ取得
+                    raw = swap16(int(hex(data),16))                     # エンディアン変更
+                    raw_s = sign16(int(hex(raw),16))                    # 符号付きデータに変換
             
             
-            amp = abs(round((ADC_VREF * raw_s / ADC_RES) / SHUNT_OHM * CT_RATIO / EFFCT_2_AVRG, LOG_DIGITS))
-            self.value = amp
+                    amp = abs(round((ADC_VREF * raw_s / ADC_RES) / SHUNT_OHM * CT_RATIO / EFFCT_2_AVRG, LOG_DIGITS))
+                    self.value = amp
+                except:
+                    self.isNeedInitialize = True
+                    print('[ERROR]i2c.read_word_data() has failed @ reading')
             
             time.sleep(0.1)
         print('Thread_readSensor has finished')
