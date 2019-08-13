@@ -154,7 +154,7 @@ class Thread_writeCSV(threading.Thread):
         temp_fileName = LOG_PATH + self.curFileTime.strftime("%Y%m%d_%H%M%S.csv")
         try:
             self.file = open(temp_fileName, mode='w')  #出力ファイルオープン
-        except FileNotFoundError:
+        except:
             # エラー発生：エラーメッセージを生成し，LEDを高速で点滅させる。
             print('[Error]Following Output file cannot be created')
             print(temp_fileName)
@@ -180,7 +180,10 @@ class Thread_writeCSV(threading.Thread):
     def endRecording(self):
         # ロギング中の時のみ実行
         if self.isRecording != False:
-            self.file.close()
+            try:
+                self.file.close()
+            except:
+                print('[Error]Closing file discripter has failed. USB memory may removed already.")
             self.isRecording = False
             GPIO.output(LED_POW,GPIO.HIGH) # POW_LEDを常時点灯へ
 
@@ -200,7 +203,12 @@ class Thread_writeCSV(threading.Thread):
                 if self.curRecTime.second != curTime.second:
                     # ロギングデータ追加
                     temp_str = curTime.strftime("%Y/%m/%d") + ',' + curTime.strftime("%H:%M:%S") + ',' + str(sensorThread.value) + '\n' 
-                    self.file.write(temp_str)
+                    # 書込み実行
+                    try:
+                        self.file.write(temp_str)
+                    except:
+                        print('[Error]Logging to USB failed @' + curTime.strftime("%Y/%m/%d/%H:%M:%S")
+                    
                     # LED点滅
                     if self.isLEDon == True:
                         GPIO.output(LED_POW,GPIO.LOW)
