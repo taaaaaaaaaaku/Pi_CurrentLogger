@@ -31,6 +31,7 @@ import RPi.GPIO as GPIO
 import time
 import smbus
 import sys
+import subprocess	#スクリプト実行用ライブラリ
 
 # 各種パラメータ
 LOG_PATH = '/media/pi/MYUSB1/'   # CSVファイルの記録先フォルダ
@@ -183,6 +184,9 @@ class Thread_writeCSV(threading.Thread):
             self.file.close()
             self.isRecording = False
             GPIO.output(LED_POW,GPIO.HIGH) # POW_LEDを常時点灯へ
+        # unmount USB
+        cmd=["umount",LOG_PATH]
+        subprocess.call(cmd)
 
     #   ロギングデータ出力処理：本関数を別スレッドにて実行
     def run(self):
