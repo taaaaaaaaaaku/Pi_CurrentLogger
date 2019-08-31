@@ -31,9 +31,10 @@ import RPi.GPIO as GPIO
 import time
 import smbus
 import sys
+import subprocess	#スクリプト実行用ライブラリ
 
 # 各種パラメータ
-LOG_PATH = '/media/pi/MYUSB1/'   # CSVファイルの記録先フォルダ
+LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
 LOG_DIGITS = 6                  # ログデータ内での電流値の小数点以下桁数
 SHUNT_OHM = 10                  # シャント抵抗値[Ohm]
 CT_RATIO = 3000                 # CTセンサ倍率(実電流/センサ出力)
@@ -186,6 +187,9 @@ class Thread_writeCSV(threading.Thread):
                 print('[Error]Closing file discripter has failed. USB memory may removed already.")
             self.isRecording = False
             GPIO.output(LED_POW,GPIO.HIGH) # POW_LEDを常時点灯へ
+        # unmount USB
+        cmd=["umount",LOG_PATH]
+        subprocess.call(cmd)
 
     #   ロギングデータ出力処理：本関数を別スレッドにて実行
     def run(self):
