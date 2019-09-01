@@ -164,8 +164,7 @@ class Thread_writeCSV(threading.Thread):
                 GPIO.output(LED_POW,GPIO.LOW)
                 time.sleep(0.1)
                 GPIO.output(LED_POW,GPIO.HIGH)
-                time.sleep(0.1)
-                
+                time.sleep(0.1)               
         else:
             # 出力ファイル生成に成功：ヘッダを書き込み
             self.file.write('day[yyyy/mm/dd],time[hh:mm:ss],current[A]\n')
@@ -187,9 +186,10 @@ class Thread_writeCSV(threading.Thread):
                 print('[Error]Closing file discripter has failed. USB memory may removed already.")
             self.isRecording = False
             GPIO.output(LED_POW,GPIO.HIGH) # POW_LEDを常時点灯へ
-        # unmount USB
-        cmd=["umount",LOG_PATH]
-        subprocess.call(cmd)
+
+            # unmount USB
+            cmd=["umount",LOG_PATH]
+            subprocess.call(cmd)
 
     #   ロギングデータ出力処理：本関数を別スレッドにて実行
     def run(self):
@@ -243,7 +243,7 @@ if __name__ == "__main__":
         except:
             if len(args) > 2 :
                 try:
-                    # 第一引数に数字があれば取得
+                    # 第二引数に数字があれば取得
                     AMP_PER_LED = int(args[2])
                 except:
                     print('Cannot read AMP_PER_LED')
