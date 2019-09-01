@@ -183,12 +183,12 @@ class Thread_writeCSV(threading.Thread):
             try:
                 self.file.close()
             except:
-                print('[Error]Closing file discripter has failed. USB memory may removed already.")
+                print('[Error]Closing file discripter has failed. USB memory may removed already.')
             self.isRecording = False
             GPIO.output(LED_POW,GPIO.HIGH) # POW_LEDを常時点灯へ
 
             # unmount USB
-            if is_umount == True: 
+            if is_umount == True:
                 cmd=["umount",LOG_PATH]
                 subprocess.call(cmd)
 
@@ -212,7 +212,7 @@ class Thread_writeCSV(threading.Thread):
                     try:
                         self.file.write(temp_str)
                     except:
-                        print('[Error]Logging to USB failed @' + curTime.strftime("%Y/%m/%d/%H:%M:%S")
+                        print('[Error]Logging to USB failed @' + curTime.strftime("%Y/%m/%d/%H:%M:%S"))
                     
                     # LED点滅
                     if self.isLEDon == True:
