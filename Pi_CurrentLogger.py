@@ -173,11 +173,11 @@ class Thread_writeCSV(threading.Thread):
     #   ファイル更新：
     #   －現在記録中のCSVファイルを終了し，新たなファイルで記録を開始
     def refreshRecordingFile(self):
-        self.endRecording();
+        self.endRecording(False);   # アンマウントはせずにファイル書込みを終了
         self.startRecording();
 
     #   記録終了
-    def endRecording(self):
+    def endRecording(self,is_umount=True):
         # ロギング中の時のみ実行
         if self.isRecording != False:
             try:
@@ -188,8 +188,9 @@ class Thread_writeCSV(threading.Thread):
             GPIO.output(LED_POW,GPIO.HIGH) # POW_LEDを常時点灯へ
 
             # unmount USB
-            cmd=["umount",LOG_PATH]
-            subprocess.call(cmd)
+            if is_umount == True: 
+                cmd=["umount",LOG_PATH]
+                subprocess.call(cmd)
 
     #   ロギングデータ出力処理：本関数を別スレッドにて実行
     def run(self):
