@@ -9,9 +9,9 @@ import time
 import threading
 from datetime import datetime,timedelta
 import RPi.GPIO as GPIO
-import time
 import smbus
 import sys
+import array
 import subprocess	#スクリプト実行用ライブラリ
 
 # 各種パラメータ
@@ -30,13 +30,8 @@ ADC_RES = 32768
 ADC_CONFIG_VAL = 0b10011000
 
 # GPIOピン番号設定
+LED_BAR = array.array('i', [18, 23, 24, 25, 8, 7, 12, 16, 20, 21])
 LED_POW = 21
-LED_LV1 = 20
-LED_LV2 = 5
-LED_LV3 = 6
-LED_LV4 = 13
-LED_LV5 = 19
-LED_LV6 = 26
 SW_INPUT = 25
 
 # 関数定義
@@ -237,12 +232,8 @@ if __name__ == "__main__":
         # GPIO設定
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(LED_POW, GPIO.OUT)
-        GPIO.setup(LED_LV1, GPIO.OUT)
-        GPIO.setup(LED_LV2, GPIO.OUT)
-        GPIO.setup(LED_LV3, GPIO.OUT)
-        GPIO.setup(LED_LV4, GPIO.OUT)
-        GPIO.setup(LED_LV5, GPIO.OUT)
-        GPIO.setup(LED_LV6, GPIO.OUT)
+        for pin in LED_BAR:
+            GPIO.setup(pin, GPIO.OUT)
         GPIO.setup(SW_INPUT, GPIO.IN)
 
         # LED_POWを点灯
@@ -268,24 +259,11 @@ if __name__ == "__main__":
                     print_cnt += 1
 
             # LEDバーを，電流値に応じて点灯
-            GPIO.output(LED_LV1, GPIO.LOW)
-            GPIO.output(LED_LV2, GPIO.LOW)
-            GPIO.output(LED_LV3, GPIO.LOW)
-            GPIO.output(LED_LV4, GPIO.LOW)
-            GPIO.output(LED_LV5, GPIO.LOW)
-            GPIO.output(LED_LV6, GPIO.LOW)
-            if(amp > AMP_PER_LED * 1):
-                GPIO.output(LED_LV1, GPIO.HIGH)
-            if(amp > AMP_PER_LED * 2):
-                GPIO.output(LED_LV2, GPIO.HIGH)
-            if(amp > AMP_PER_LED * 3):
-                GPIO.output(LED_LV3, GPIO.HIGH)
-            if(amp > AMP_PER_LED * 4):
-                GPIO.output(LED_LV4, GPIO.HIGH)
-            if(amp > AMP_PER_LED * 5):
-                GPIO.output(LED_LV5, GPIO.HIGH)
-            if(amp > AMP_PER_LED * 6):
-                GPIO.output(LED_LV6, GPIO.HIGH)
+            for pin in LED_BAR:
+                GPIO.output(pin, GPIO.LOW)
+            for i in range( len(LED_BAR) ):
+                if(amp > AMP_PER_LED * i):
+                    GPIO.output(LED_BAR[i], GPIO.HIGH)
 
             # タクトスイッチ押下時：記録開始＆終了
             if GPIO.input(SW_INPUT) == GPIO.LOW:
