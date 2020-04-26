@@ -19,7 +19,7 @@ LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
 LOG_DIGITS = 6                  # ログデータ内での電流値の小数点以下桁数
 SHUNT_OHM = 10                  # シャント抵抗値[Ohm]
 CT_RATIO = 3000                 # CTセンサ倍率(実電流/センサ出力)
-AMP_PER_LED = 5                 # LEDバー内，1LEDあたりの電流値
+AMP_PER_LED = 3                 # LEDバー内，1LEDあたりの電流値
 EFFCT_2_AVRG = 0.9005           # 平滑化電流値から実効値への変換係数
 #Note:実効値1Aの正弦波 -> 絶対値処理&平滑化 -> 0.9005A
 
@@ -27,12 +27,20 @@ EFFCT_2_AVRG = 0.9005           # 平滑化電流値から実効値への変換�
 ADC_ADDR = 0x68
 ADC_VREF = 2.048
 ADC_RES = 32768
-ADC_CONFIG_VAL = 0b10011000
+# bit7  : /RDY(1で変換開始)
+# bit6,5: チャネル選択(00:ch1 01:ch2 10:ch3 11:ch4)
+# bit4  : 変換モード(1:ワンショット 0:連続)
+# bit3,2: サンプリングレート(11:3.75SPS/18bit 10:15SPS/16bit 01:60SPS/14bit 00:240SPS/12bit)
+# bit1,0: PGAゲイン(00:x1 01:x2 10:x4 11:x8)
+ADC_CONFIG_CH1 = 0b11011000 # ボード上CH1 = MCP3424のch3
+ADC_CONFIG_CH2 = 0b11111000 # ボード上CH2 = MCP3424のch4
+ADC_CONFIG_CH3 = 0b10011000 # ボード上CH3 = MCP3424のch1
+ADC_CONFIG_CH4 = 0b10111000 # ボード上CH4 = MCP3424のch2
 
 # GPIOピン番号設定
 LED_BAR = array.array('i', [18, 23, 24, 25, 8, 7, 12, 16, 20, 21])
-LED_POW = 21
-SW_INPUT = 25
+LED_POW = 5
+SW_INPUT = 19
 
 # 関数定義
 def swap16(x):
@@ -55,8 +63,8 @@ class Thread_readSensor(threading.Thread):
     def __init__(self, val=0):
         # メンバ変数初期化
         threading.Thread.__init__(self)
-        self.value = val         # 測定値
-        self.kill_flag = False   # スレッド終了用フラグ
+        self.value = array.array('f', [val, val, val, val]) # 測定値
+        self.kill_flag = False       # スレッド終了用フラグ
         self.isNeedInitialize = True # 通信初期化要否判定
 
     #   センサ値読込メソッド：本関数を別スレッドにて実行。
@@ -65,7 +73,7 @@ class Thread_readSensor(threading.Thread):
             # 初回起動時や，通信エラー発生時は初期化処理を実施
             if self.isNeedInitialize == True:
                 try:
-                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_VAL) #ADCに設定値を書き込み
+                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH1) #ADCに試しに設定値を書き込み
                 except:
                     # 初期化処理失敗
                     self.isNeedInitialize = True
@@ -83,24 +91,39 @@ class Thread_readSensor(threading.Thread):
             # 初期化処理が完了している時のみ，受信処理を実行
             if self.isNeedInitialize != True:
                 try:
-                    data = i2c.read_word_data(ADC_ADDR,ADC_CONFIG_VAL)  # ADCからデータ取得
-                    raw = swap16(int(hex(data),16))                     # エンディアン変更
-                    raw_s = sign16(int(hex(raw),16))                    # 符号付きデータに変換
-            
-            
-                    amp = abs(round((ADC_VREF * raw_s / ADC_RES) / SHUNT_OHM * CT_RATIO / EFFCT_2_AVRG, LOG_DIGITS))
-                    self.value = amp
+                    data = array.array('i')
+
+                    #ch1
+                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH1)
+                    time.sleep(0.2)
+                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                    #ch2
+                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH2)
+                    time.sleep(0.2)
+                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                    #ch3
+                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH3)
+                    time.sleep(0.2)
+                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                    #ch4
+                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH4)
+                    time.sleep(0.2)
+                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+
+                    for i in range(4):
+                        raw = swap16(int(hex(data[i]),16))                     # エンディアン変更
+                        raw_s = sign16(int(hex(raw),16))                    # 符号付きデータに変換
+                        amp = abs(round((ADC_VREF * raw_s / ADC_RES) / SHUNT_OHM * CT_RATIO / EFFCT_2_AVRG, LOG_DIGITS))
+                        self.value[i] = amp
                 except:
                     self.isNeedInitialize = True
-                    print('[ERROR]i2c.read_word_data() has failed @ reading')
+                    print('[ERROR]sensor read error@ reading')
                     # LED高速点滅
                     for i in range(3):
                         GPIO.output(LED_POW,GPIO.LOW)
                         time.sleep(0.1)
                         GPIO.output(LED_POW,GPIO.HIGH)
                         time.sleep(0.1)
-            # 次ループ実施まで若干待機
-            time.sleep(0.1)
         print('Thread_readSensor has finished')
 
     #   スレッド終了用関数
@@ -143,7 +166,7 @@ class Thread_writeCSV(threading.Thread):
                 time.sleep(0.1)               
         else:
             # 出力ファイル生成に成功：ヘッダを書き込み
-            self.file.write('day[yyyy/mm/dd],time[hh:mm:ss],current[A]\n')
+            self.file.write('day[yyyy/mm/dd],time[hh:mm:ss],ch1[A],ch2[A],ch3[A],ch4[A]\n')
             self.isRecording = True
 
     #   ファイル更新：
@@ -183,7 +206,7 @@ class Thread_writeCSV(threading.Thread):
                 # 毎秒処理:ロギングデータ追加＆LED点滅
                 if self.curRecTime.second != curTime.second:
                     # ロギングデータ追加
-                    temp_str = curTime.strftime("%Y/%m/%d") + ',' + curTime.strftime("%H:%M:%S") + ',' + str(sensorThread.value) + '\n' 
+                    temp_str = curTime.strftime("%Y/%m/%d") + ',' + curTime.strftime("%H:%M:%S") + ',' + str(sensorThread.value[0]) + ',' + str(sensorThread.value[1]) + ',' + str(sensorThread.value[2]) + ',' + str(sensorThread.value[3]) + '\n' 
                     # 書込み実行
                     try:
                         self.file.write(temp_str)
@@ -250,7 +273,7 @@ if __name__ == "__main__":
         print_cnt = 0
         while 1:
             # 電流値取得
-            amp = sensorThread.value
+            amp = sensorThread.value[0]
             # [debugモード時]定期的にコンソールに電流値出力
             if len(args) > 1 :
                 if args[1] == 'debug':
@@ -259,11 +282,11 @@ if __name__ == "__main__":
                     print_cnt += 1
 
             # LEDバーを，電流値に応じて点灯
-            for pin in LED_BAR:
-                GPIO.output(pin, GPIO.LOW)
             for i in range( len(LED_BAR) ):
                 if(amp > AMP_PER_LED * i):
                     GPIO.output(LED_BAR[i], GPIO.HIGH)
+                else:
+                    GPIO.output(LED_BAR[i], GPIO.LOW)
 
             # タクトスイッチ押下時：記録開始＆終了
             if GPIO.input(SW_INPUT) == GPIO.LOW:
