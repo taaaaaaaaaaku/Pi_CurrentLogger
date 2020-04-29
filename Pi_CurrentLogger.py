@@ -259,7 +259,7 @@ if __name__ == "__main__":
         GPIO.setup(LED_POW, GPIO.OUT)
         for pin in LED_BAR:
             GPIO.setup(pin, GPIO.OUT)
-        GPIO.setpu(BUZZER, GPIO.OUT)
+        GPIO.setup(BUZZER, GPIO.OUT)
         GPIO.setup(SW_INPUT, GPIO.IN)
 
         # LED_POWを点灯
