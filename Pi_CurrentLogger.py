@@ -282,6 +282,7 @@ if __name__ == "__main__":
                     print_cnt += 1
 
             # LEDバーを，電流値に応じて点灯
+            # TODO:Ch1と2の合計など，設定によって複数チャンネル合計でのLED表示に対応
             for i in range( len(LED_BAR) ):
                 if(amp > AMP_PER_LED * i):
                     GPIO.output(LED_BAR[i], GPIO.HIGH)
