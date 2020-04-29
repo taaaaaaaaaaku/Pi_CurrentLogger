@@ -278,7 +278,7 @@ if __name__ == "__main__":
             if len(args) > 1 :
                 if args[1] == 'debug':
                     if print_cnt % 10 == 0:
-                        print ('Current:'+str(amp)+ ' A')
+                        print ('Current:'+format(amp, '.2f')+ ' A')
                     print_cnt += 1
 
             # LEDバーを，電流値に応じて点灯
