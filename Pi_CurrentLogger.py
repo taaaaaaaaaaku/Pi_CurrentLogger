@@ -21,6 +21,7 @@ SHUNT_OHM = 10                  # シャント抵抗値[Ohm]
 CT_RATIO = 3000                 # CTセンサ倍率(実電流/センサ出力)
 AMP_PER_LED = 3                 # LEDバー内，1LEDあたりの電流値
 EFFCT_2_AVRG = 0.9005           # 平滑化電流値から実効値への変換係数
+BUZZER_AMP = 25                 # ブザーを鳴らす電流
 #Note:実効値1Aの正弦波 -> 絶対値処理&平滑化 -> 0.9005A
 
 # ADC設定
@@ -41,6 +42,7 @@ ADC_CONFIG_CH4 = 0b10111000 # ボード上CH4 = MCP3424のch2
 LED_BAR = array.array('i', [18, 23, 24, 25, 8, 7, 12, 16, 20, 21])
 LED_POW = 5
 SW_INPUT = 19
+BUZZER= 26
 
 # 関数定義
 def swap16(x):
@@ -257,10 +259,21 @@ if __name__ == "__main__":
         GPIO.setup(LED_POW, GPIO.OUT)
         for pin in LED_BAR:
             GPIO.setup(pin, GPIO.OUT)
+        GPIO.setpu(BUZZER, GPIO.OUT)
         GPIO.setup(SW_INPUT, GPIO.IN)
 
         # LED_POWを点灯
         GPIO.output(LED_POW,GPIO.HIGH)
+
+        # 1秒間全ＬＥＤ点灯＋ブザー0.2秒鳴動
+        for pin in LED_BAR:
+            GPIO.output(pin, GPIO.HIGH)
+        time.sleep(0.8)
+        GPIO.output(BUZZER, GPIO.HIGH)
+        time.sleep(0.2)
+        for pin in LED_BAR:
+            GPIO.output(pin, GPIO.LOW)
+        GPIO.output(BUZZER, GPIO.LOW)
         
         # スレッド定義
         sensorThread = Thread_readSensor()
@@ -288,6 +301,11 @@ if __name__ == "__main__":
                     GPIO.output(LED_BAR[i], GPIO.HIGH)
                 else:
                     GPIO.output(LED_BAR[i], GPIO.LOW)
+            # 電流が設定値を超えた場合，ブザー鳴動
+            if(amp > BUZZER_AMP):
+                GPIO.output(BUZZER, GPIO.HIGH)
+            else:
+                GPIO.output(BUZZER, GPIO.LOW)
 
             # タクトスイッチ押下時：記録開始＆終了
             if GPIO.input(SW_INPUT) == GPIO.LOW:
