@@ -390,7 +390,9 @@ if __name__ == "__main__":
         # 各スレッドに終了を命令
         sensorThread.endThread()
         fileThread.endThread()
+        buzzerThread.endThread()
         # 各スレッドの終了を待機
         sensorThread.join()
         fileThread.join()
+        buzzerThread.join()
         print('Program Finished')
