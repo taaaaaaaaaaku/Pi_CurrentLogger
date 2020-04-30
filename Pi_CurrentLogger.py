@@ -13,6 +13,8 @@ import smbus
 import sys
 import array
 import subprocess	#スクリプト実行用ライブラリ
+import pychromecast     #GoogleHome用
+from gtts import gTTS
 
 # 各種パラメータ
 LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
