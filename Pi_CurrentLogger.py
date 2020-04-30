@@ -375,6 +375,8 @@ if __name__ == "__main__":
                     googleHome.wait()
                     googleHome.media_controller.play_media(OC_WARNING_DATA_PATH, 'audio/mp3')
                     googleHome.media_controller.block_until_active()
+                except:
+                    # do nothing
             else:
                 buzzerThread.setOverCurrent(False)
 
