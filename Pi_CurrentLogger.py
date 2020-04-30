@@ -232,6 +232,59 @@ class Thread_writeCSV(threading.Thread):
     def endThread(self):
         self.kill_flag = True        
 
+# =======================
+# ブザー管理クラス
+# =======================
+#   ブザーの制御を行う。
+class Thread_buzzerMgr(threading.Thread):
+    #   初期化関数
+    def __init__(self):
+        # メンバ変数初期化
+        threading.Thread.__init__(self)
+        self.kill_flag = False              # スレッド終了用フラグ
+        self.isOverCurrent = False         # OC発生状況
+        self.manualBuzzerTime = 0.0        # 手動鳴動時間
+
+        # ブザーGPIOを初期化
+        GPIO.setup(BUZZER, GPIO.OUT)       
+        GPIO.output(BUZZER, GPIO.LOW)
+        
+    #   過電流発生状況をセット
+    def setOverCurrent(self, isOC):
+        self.isOverCurrent = isOC
+
+    #   指定時間鳴動をセット
+    def setManual(self, duration):
+        self.manualBuzzerTime = duration
+        
+    #   ロギングデータ出力処理：本関数を別スレッドにて実行
+    def run(self):
+        while not(self.kill_flag):
+            # 電流警告
+            if(self.isOverCurrent):
+                GPIO.output(BUZZER, GPIO.HIGH)
+                time.sleep(0.2)
+                GPIO.output(BUZZER, GPIO.LOW)
+                time.sleep(0.2)
+                GPIO.output(BUZZER, GPIO.HIGH)
+                time.sleep(0.2)
+                GPIO.output(BUZZER, GPIO.LOW)
+                time.sleep(0.2)
+                GPIO.output(BUZZER, GPIO.HIGH)
+                time.sleep(0.2)
+                GPIO.output(BUZZER, GPIO.LOW)
+                time.sleep(5)
+            # マニュアル鳴動
+            if (self.manualBuzzerTime != 0.0)
+                GPIO.output(BUZZER, GPIO.HIGH)
+                time.sleep(self.manualBuzzerTime)
+                GPIO.output(BUZZER, GPIO.LOW)
+                self.manualBuzzerTime = 0.0
+                
+
+    #   スレッド終了用関数
+    def endThread(self):
+        self.kill_flag = True            
 
 if __name__ == "__main__":
 
@@ -259,8 +312,17 @@ if __name__ == "__main__":
         GPIO.setup(LED_POW, GPIO.OUT)
         for pin in LED_BAR:
             GPIO.setup(pin, GPIO.OUT)
-        GPIO.setup(BUZZER, GPIO.OUT)
         GPIO.setup(SW_INPUT, GPIO.IN)
+        
+        # スレッド定義
+        sensorThread = Thread_readSensor()
+        fileThread = Thread_writeCSV()
+        buzzerThread = Thread_buzzerMgr()
+        
+        # スレッド開始
+        sensorThread.start()
+        fileThread.start()
+        buzzerThread.start()
 
         # LED_POWを点灯
         GPIO.output(LED_POW,GPIO.HIGH)
@@ -268,20 +330,11 @@ if __name__ == "__main__":
         # 1秒間全ＬＥＤ点灯＋ブザー0.2秒鳴動
         for pin in LED_BAR:
             GPIO.output(pin, GPIO.HIGH)
-        time.sleep(0.8)
-        GPIO.output(BUZZER, GPIO.HIGH)
-        time.sleep(0.2)
+        time.sleep(1.0)
         for pin in LED_BAR:
             GPIO.output(pin, GPIO.LOW)
-        GPIO.output(BUZZER, GPIO.LOW)
-        
-        # スレッド定義
-        sensorThread = Thread_readSensor()
-        fileThread = Thread_writeCSV()
+        buzzerThread.setManual(0.2)
 
-        # スレッド開始
-        sensorThread.start()
-        fileThread.start()
         
         print_cnt = 0
         while 1:
@@ -303,9 +356,9 @@ if __name__ == "__main__":
                     GPIO.output(LED_BAR[i], GPIO.LOW)
             # 電流が設定値を超えた場合，ブザー鳴動
             if(amp > BUZZER_AMP):
-                GPIO.output(BUZZER, GPIO.HIGH)
+                buzzerThread.setOverCurrent(True)
             else:
-                GPIO.output(BUZZER, GPIO.LOW)
+                buzzerThread.setOverCurrent(False)
 
             # タクトスイッチ押下時：記録開始＆終了
             if GPIO.input(SW_INPUT) == GPIO.LOW:
