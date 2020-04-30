@@ -360,26 +360,27 @@ if __name__ == "__main__":
                 else:
                     GPIO.output(LED_BAR[i], GPIO.LOW)
             # 電流が設定値を超えた場合，ブザー鳴動 & GoogleHomeで音声出力
-            if(amp > BUZZER_AMP):
-                buzzerThread.setOverCurrent(True)
-                try:
+            try:
+                if(amp > BUZZER_AMP):
+                    buzzerThread.setOverCurrent(True)
+
                     #IPアドレスで特定する
                     googleHome = pychromecast.Chromecast(GOOGLE_HOME_IP_ADDR)
 
                     if not googleHome.is_idle:
                         print("Killing current running app")
                         googleHome.quit_app()
-                        time.sleep(5)
+                        time.sleep(2)
 
                     #喋らせる
                     googleHome.wait()
                     googleHome.media_controller.play_media(OC_WARNING_DATA_PATH, 'audio/mp3')
                     googleHome.media_controller.block_until_active()
-                except:
-                    # do nothing
-            else:
-                buzzerThread.setOverCurrent(False)
-
+                    
+                else:
+                    buzzerThread.setOverCurrent(False)
+            except:
+                # do nothing
             
 
             # タクトスイッチ押下時：記録開始＆終了
