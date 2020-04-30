@@ -381,6 +381,7 @@ if __name__ == "__main__":
                     buzzerThread.setOverCurrent(False)
             except:
                 # do nothing
+                print("Cannot connect with GoogleHome")
             
 
             # タクトスイッチ押下時：記録開始＆終了
