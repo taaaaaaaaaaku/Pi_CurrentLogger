@@ -14,7 +14,7 @@ import sys
 import array
 import subprocess	#スクリプト実行用ライブラリ
 import pychromecast     #GoogleHome用
-from gtts import gTTS
+# from gtts import gTTS
 
 # 各種パラメータ
 LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
@@ -23,8 +23,11 @@ SHUNT_OHM = 10                  # シャント抵抗値[Ohm]
 CT_RATIO = 3000                 # CTセンサ倍率(実電流/センサ出力)
 AMP_PER_LED = 3                 # LEDバー内，1LEDあたりの電流値
 EFFCT_2_AVRG = 0.9005           # 平滑化電流値から実効値への変換係数
-BUZZER_AMP = 25                 # ブザーを鳴らす電流
 #Note:実効値1Aの正弦波 -> 絶対値処理&平滑化 -> 0.9005A
+BUZZER_AMP = 25                 # ブザーを鳴らす電流
+GOOGLE_HOME_IP_ADDR = '192.168.11.18' # 音声警告を出したいGoogleHomeデバイスのアドレス
+OC_WARNING_DATA_PATH = 'http://192.168.11.10/openAccess/OC_warning.mp3' #警告音声の格納先
+
 
 # ADC設定
 ADC_ADDR = 0x68
@@ -356,11 +359,26 @@ if __name__ == "__main__":
                     GPIO.output(LED_BAR[i], GPIO.HIGH)
                 else:
                     GPIO.output(LED_BAR[i], GPIO.LOW)
-            # 電流が設定値を超えた場合，ブザー鳴動
+            # 電流が設定値を超えた場合，ブザー鳴動 & GoogleHomeで音声出力
             if(amp > BUZZER_AMP):
                 buzzerThread.setOverCurrent(True)
+                try:
+                    #IPアドレスで特定する
+                    googleHome = pychromecast.Chromecast(GOOGLE_HOME_IP_ADDR)
+
+                    if not googleHome.is_idle:
+                        print("Killing current running app")
+                        googleHome.quit_app()
+                        time.sleep(5)
+
+                    #喋らせる
+                    googleHome.wait()
+                    googleHome.media_controller.play_media(OC_WARNING_DATA_PATH, 'audio/mp3')
+                    googleHome.media_controller.block_until_active()
             else:
                 buzzerThread.setOverCurrent(False)
+
+            
 
             # タクトスイッチ押下時：記録開始＆終了
             if GPIO.input(SW_INPUT) == GPIO.LOW:
