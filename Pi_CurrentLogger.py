@@ -275,7 +275,7 @@ class Thread_buzzerMgr(threading.Thread):
                 GPIO.output(BUZZER, GPIO.LOW)
                 time.sleep(5)
             # マニュアル鳴動
-            if (self.manualBuzzerTime != 0.0)
+            if (self.manualBuzzerTime != 0.0):
                 GPIO.output(BUZZER, GPIO.HIGH)
                 time.sleep(self.manualBuzzerTime)
                 GPIO.output(BUZZER, GPIO.LOW)
