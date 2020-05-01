@@ -15,7 +15,6 @@ import smbus
 import sys
 import array
 import subprocess	#スクリプト実行用ライブラリ
-import pychromecast     #GoogleHome用
 # from gtts import gTTS
 
 # 各種パラメータ読み込み
@@ -32,6 +31,7 @@ try:
 
     IS_USE_GOOGLE = config.getboolean('googlehome','enable') # GoogleHomeを使用するか
     if IS_USE_GOOGLE:
+        import pychromecast     #GoogleHome用
         GOOGLE_AMP   = config.getfloat('googlehome','google_amp') # GoogleHomeで警告音声を流す電流
         GOOGLE_HOME_IP_ADDR = config.get('googlehome','ip_addr')# 音声警告を出したいGoogleHomeデバイスのアドレス
         OC_WARNING_DATA_PATH = config.get('googlehome','voicefile') #警告音声の格納先
