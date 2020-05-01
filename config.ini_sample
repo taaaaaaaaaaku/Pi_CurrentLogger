@@ -1,0 +1,15 @@
+[log]
+path = /media/pi/MYUSB/   ; CSVファイルの記録先フォルダ
+digits = 6                ; ログデータ内での電流値の小数点以下桁数
+
+[disp]
+amp_per_LED = 3           ; LEDバー内，1LEDあたりの電流値
+
+[alart]
+amp = 25           ; ブザーを鳴らす電流
+
+[googlehome]
+is_use = False            ; GoogleHomeによる警告を行うか
+amp = 25                  ; 音声警告を鳴らす電流
+ip_addr = 192.168.11.18   ; 音声警告を出したいGoogleHomeデバイスのアドレス
+voicefile = http://192.168.11.10/openAccess/OC_warning.mp3 ;警告音声の格納先

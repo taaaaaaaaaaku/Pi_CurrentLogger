@@ -7,6 +7,8 @@
 # ライブラリのインポート
 import time
 import threading
+import configparser
+import sys
 from datetime import datetime,timedelta
 import RPi.GPIO as GPIO
 import smbus
@@ -16,18 +18,33 @@ import subprocess	#スクリプト実行用ライブラリ
 import pychromecast     #GoogleHome用
 # from gtts import gTTS
 
-# 各種パラメータ
-LOG_PATH = '/media/pi/MYUSB/'   # CSVファイルの記録先フォルダ
-LOG_DIGITS = 6                  # ログデータ内での電流値の小数点以下桁数
+# 各種パラメータ読み込み
+try:
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    LOG_PATH     = config.get('log','path')      # CSVファイルの記録先フォルダ
+    LOG_DIGITS   = config.getint('log','digits') # ログデータ内での電流値の小数点以下桁数
+
+    AMP_PER_LED  = config.getfloat('disp','amp_per_LED') # LEDバー内，1LEDあたりの電流値
+
+    BUZZER_AMP   = config.getfloat('alart','amp') # ブザーを鳴らす電流
+
+    IS_USE_GOOGLE = config.getboolean('googlehome','enable') # GoogleHomeを使用するか
+    if IS_USE_GOOGLE:
+        GOOGLE_AMP   = config.getfloat('googlehome','google_amp') # GoogleHomeで警告音声を流す電流
+        GOOGLE_HOME_IP_ADDR = config.get('googlehome','ip_addr')# 音声警告を出したいGoogleHomeデバイスのアドレス
+        OC_WARNING_DATA_PATH = config.get('googlehome','voicefile') #警告音声の格納先
+except:
+    print('no ini file or no enough option in INI file')
+    sys.exit(1)
+    
+
+# 基板定数設定
 SHUNT_OHM = 10                  # シャント抵抗値[Ohm]
 CT_RATIO = 3000                 # CTセンサ倍率(実電流/センサ出力)
-AMP_PER_LED = 3                 # LEDバー内，1LEDあたりの電流値
 EFFCT_2_AVRG = 0.9005           # 平滑化電流値から実効値への変換係数
 #Note:実効値1Aの正弦波 -> 絶対値処理&平滑化 -> 0.9005A
-BUZZER_AMP = 25                 # ブザーを鳴らす電流
-GOOGLE_HOME_IP_ADDR = '192.168.11.18' # 音声警告を出したいGoogleHomeデバイスのアドレス
-OC_WARNING_DATA_PATH = 'http://192.168.11.10/openAccess/OC_warning.mp3' #警告音声の格納先
-
 
 # ADC設定
 ADC_ADDR = 0x68
@@ -359,10 +376,14 @@ if __name__ == "__main__":
                     GPIO.output(LED_BAR[i], GPIO.HIGH)
                 else:
                     GPIO.output(LED_BAR[i], GPIO.LOW)
-            # 電流が設定値を超えた場合，ブザー鳴動 & GoogleHomeで音声出力
-            if(amp > BUZZER_AMP):
-                buzzerThread.setOverCurrent(True)
+            # 電流が設定値を超えた場合，ブザー鳴動
+            if(amp > BUZZER_AMP && BUZZER_AMP == 0):
+                buzzerThread.setOverCurrent(True)         
+            else:
+                buzzerThread.setOverCurrent(False)            
 
+            # GoogleHomeで音声出力
+            if IS_USE_GOOGLE && amp > GOOGLE_AMP:
                 try:
                     #IPアドレスで特定する
                     googleHome = pychromecast.Chromecast(GOOGLE_HOME_IP_ADDR)
@@ -377,10 +398,8 @@ if __name__ == "__main__":
                     googleHome.media_controller.play_media(OC_WARNING_DATA_PATH, 'audio/mp3')
                     googleHome.media_controller.block_until_active()
                 except:
-                    print("Cannot connect with GoogleHome")          
-            else:
-                buzzerThread.setOverCurrent(False)            
-
+                    print("Cannot connect with GoogleHome")   
+            
             # タクトスイッチ押下時：記録開始＆終了
             if GPIO.input(SW_INPUT) == GPIO.LOW:
                 # スイッチが離されるまで待機
