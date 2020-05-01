@@ -377,13 +377,13 @@ if __name__ == "__main__":
                 else:
                     GPIO.output(LED_BAR[i], GPIO.LOW)
             # 電流が設定値を超えた場合，ブザー鳴動
-            if(amp > BUZZER_AMP && BUZZER_AMP == 0):
+            if(amp > BUZZER_AMP and BUZZER_AMP == 0):
                 buzzerThread.setOverCurrent(True)         
             else:
                 buzzerThread.setOverCurrent(False)            
 
             # GoogleHomeで音声出力
-            if IS_USE_GOOGLE && amp > GOOGLE_AMP:
+            if IS_USE_GOOGLE and amp > GOOGLE_AMP:
                 try:
                     #IPアドレスで特定する
                     googleHome = pychromecast.Chromecast(GOOGLE_HOME_IP_ADDR)
