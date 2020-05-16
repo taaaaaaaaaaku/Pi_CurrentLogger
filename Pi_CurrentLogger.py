@@ -15,12 +15,18 @@ import smbus
 import sys
 import array
 import subprocess	#スクリプト実行用ライブラリ
+import os
 # from gtts import gTTS
 
 # 各種パラメータ読み込み
 try:
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    if os.path.dirname(__file__) == '':
+        configname = 'config.ini'
+    else:
+        configname = os.path.dirname(__file__) + '/config.ini'
+    print(configname)
+    config.read(configname)
 
     LOG_PATH     = config.get('log','path')      # CSVファイルの記録先フォルダ
     LOG_DIGITS   = config.getint('log','digits') # ログデータ内での電流値の小数点以下桁数
