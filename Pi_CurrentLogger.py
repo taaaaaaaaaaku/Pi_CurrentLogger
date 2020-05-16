@@ -99,62 +99,66 @@ class Thread_readSensor(threading.Thread):
 
     #   センサ値読込メソッド：本関数を別スレッドにて実行。
     def run(self):
-        while not(self.kill_flag):
-            # 初回起動時や，通信エラー発生時は初期化処理を実施
-            if self.isNeedInitialize == True:
-                try:
-                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH1) #ADCに試しに設定値を書き込み
-                except:
-                    # 初期化処理失敗
-                    self.isNeedInitialize = True
-                    print('[ERROR]i2c.write_byte() has failed @ initializing')
-                    # LED高速点滅
-                    for i in range(3):
-                        GPIO.output(LED_POW,GPIO.LOW)
-                        time.sleep(0.1)
-                        GPIO.output(LED_POW,GPIO.HIGH)
-                        time.sleep(0.1)
-                else:
-                    # 初期化処理成功
-                    self.isNeedInitialize = False;
+        try:
+            while not(self.kill_flag):
+                # 初回起動時や，通信エラー発生時は初期化処理を実施
+                if self.isNeedInitialize == True:
+                    try:
+                        i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH1) #ADCに試しに設定値を書き込み
+                    except:
+                        # 初期化処理失敗
+                        self.isNeedInitialize = True
+                        print('[ERROR]i2c.write_byte() has failed @ initializing')
+                        # LED高速点滅
+                        for i in range(3):
+                            GPIO.output(LED_POW,GPIO.LOW)
+                            time.sleep(0.1)
+                            GPIO.output(LED_POW,GPIO.HIGH)
+                            time.sleep(0.1)
+                    else:
+                        # 初期化処理成功
+                        self.isNeedInitialize = False;
 
-            # 初期化処理が完了している時のみ，受信処理を実行
-            if self.isNeedInitialize != True:
-                try:
-                    data = array.array('i')
+                # 初期化処理が完了している時のみ，受信処理を実行
+                if self.isNeedInitialize != True:
+                    try:
+                        data = array.array('i')
 
-                    #ch1
-                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH1)
-                    time.sleep(0.2)
-                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
-                    #ch2
-                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH2)
-                    time.sleep(0.2)
-                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
-                    #ch3
-                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH3)
-                    time.sleep(0.2)
-                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
-                    #ch4
-                    i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH4)
-                    time.sleep(0.2)
-                    data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                        #ch1
+                        i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH1)
+                        time.sleep(0.2)
+                        data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                        #ch2
+                        i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH2)
+                        time.sleep(0.2)
+                        data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                        #ch3
+                        i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH3)
+                        time.sleep(0.2)
+                        data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
+                        #ch4
+                        i2c.write_byte(ADC_ADDR,ADC_CONFIG_CH4)
+                        time.sleep(0.2)
+                        data.append(i2c.read_word_data(ADC_ADDR,0x00))  # ADCからデータ取得
 
-                    for i in range(4):
-                        raw = swap16(int(hex(data[i]),16))                     # エンディアン変更
-                        raw_s = sign16(int(hex(raw),16))                    # 符号付きデータに変換
-                        amp = abs(round((ADC_VREF * raw_s / ADC_RES) / SHUNT_OHM * CT_RATIO / EFFCT_2_AVRG, LOG_DIGITS))
-                        self.value[i] = amp
-                except:
-                    self.isNeedInitialize = True
-                    print('[ERROR]sensor read error@ reading')
-                    # LED高速点滅
-                    for i in range(3):
-                        GPIO.output(LED_POW,GPIO.LOW)
-                        time.sleep(0.1)
-                        GPIO.output(LED_POW,GPIO.HIGH)
-                        time.sleep(0.1)
-        print('Thread_readSensor has finished')
+                        for i in range(4):
+                            raw = swap16(int(hex(data[i]),16))                     # エンディアン変更
+                            raw_s = sign16(int(hex(raw),16))                    # 符号付きデータに変換
+                            amp = abs(round((ADC_VREF * raw_s / ADC_RES) / SHUNT_OHM * CT_RATIO / EFFCT_2_AVRG, LOG_DIGITS))
+                            self.value[i] = amp
+                    except:
+                        self.isNeedInitialize = True
+                        print('[ERROR]sensor read error@ reading')
+                        # LED高速点滅
+                        for i in range(3):
+                            GPIO.output(LED_POW,GPIO.LOW)
+                            time.sleep(0.1)
+                            GPIO.output(LED_POW,GPIO.HIGH)
+                            time.sleep(0.1)
+            print('Thread_readSensor has finished')
+        except :
+            import traceback
+            traceback.print_exc()
 
     #   スレッド終了用関数
     def endThread(self):
@@ -223,38 +227,42 @@ class Thread_writeCSV(threading.Thread):
 
     #   ロギングデータ出力処理：本関数を別スレッドにて実行
     def run(self):
-        while not(self.kill_flag):
-            if self.isRecording == True:
-                # 現在時刻を一時的に取得
-                curTime = datetime.now()
-                
-                # 毎時処理：ファイル更新
-                if self.curRecTime.hour != curTime.hour:
-                    self.refreshRecordingFile()
-
-                
-                # 毎秒処理:ロギングデータ追加＆LED点滅
-                if self.curRecTime.second != curTime.second:
-                    # ロギングデータ追加
-                    temp_str = curTime.strftime("%Y/%m/%d") + ',' + curTime.strftime("%H:%M:%S") + ',' + str(sensorThread.value[0]) + ',' + str(sensorThread.value[1]) + ',' + str(sensorThread.value[2]) + ',' + str(sensorThread.value[3]) + '\n' 
-                    # 書込み実行
-                    try:
-                        self.file.write(temp_str)
-                    except:
-                        print('[Error]Logging to USB failed @' + curTime.strftime("%Y/%m/%d/%H:%M:%S"))
+        try:
+            while not(self.kill_flag):
+                if self.isRecording == True:
+                    # 現在時刻を一時的に取得
+                    curTime = datetime.now()
                     
-                    # LED点滅
-                    if self.isLEDon == True:
-                        GPIO.output(LED_POW,GPIO.LOW)
-                        self.isLEDon = False
-                    else:
-                        GPIO.output(LED_POW,GPIO.HIGH)
-                        self.isLEDon = True
+                    # 毎時処理：ファイル更新
+                    if self.curRecTime.hour != curTime.hour:
+                        self.refreshRecordingFile()
+
+                    
+                    # 毎秒処理:ロギングデータ追加＆LED点滅
+                    if self.curRecTime.second != curTime.second:
+                        # ロギングデータ追加
+                        temp_str = curTime.strftime("%Y/%m/%d") + ',' + curTime.strftime("%H:%M:%S") + ',' + str(sensorThread.value[0]) + ',' + str(sensorThread.value[1]) + ',' + str(sensorThread.value[2]) + ',' + str(sensorThread.value[3]) + '\n' 
+                        # 書込み実行
+                        try:
+                            self.file.write(temp_str)
+                        except:
+                            print('[Error]Logging to USB failed @' + curTime.strftime("%Y/%m/%d/%H:%M:%S"))
                         
-                # 現在時刻データ更新
-                self.curRecTime = curTime
-            
-        print('Thread_writeCSV has finished')
+                        # LED点滅
+                        if self.isLEDon == True:
+                            GPIO.output(LED_POW,GPIO.LOW)
+                            self.isLEDon = False
+                        else:
+                            GPIO.output(LED_POW,GPIO.HIGH)
+                            self.isLEDon = True
+                            
+                    # 現在時刻データ更新
+                    self.curRecTime = curTime
+                
+            print('Thread_writeCSV has finished')
+        except :
+            import traceback
+            traceback.print_exc()
         
     #   スレッド終了用関数
     def endThread(self):
@@ -287,28 +295,31 @@ class Thread_buzzerMgr(threading.Thread):
         
     #   ロギングデータ出力処理：本関数を別スレッドにて実行
     def run(self):
-        while not(self.kill_flag):
-            # 電流警告
-            if(self.isOverCurrent):
-                GPIO.output(BUZZER, GPIO.HIGH)
-                time.sleep(0.2)
-                GPIO.output(BUZZER, GPIO.LOW)
-                time.sleep(0.2)
-                GPIO.output(BUZZER, GPIO.HIGH)
-                time.sleep(0.2)
-                GPIO.output(BUZZER, GPIO.LOW)
-                time.sleep(0.2)
-                GPIO.output(BUZZER, GPIO.HIGH)
-                time.sleep(0.2)
-                GPIO.output(BUZZER, GPIO.LOW)
-                time.sleep(5)
-            # マニュアル鳴動
-            if (self.manualBuzzerTime != 0.0):
-                GPIO.output(BUZZER, GPIO.HIGH)
-                time.sleep(self.manualBuzzerTime)
-                GPIO.output(BUZZER, GPIO.LOW)
-                self.manualBuzzerTime = 0.0
-                
+        try:
+            while not(self.kill_flag):
+                # 電流警告
+                if(self.isOverCurrent):
+                    GPIO.output(BUZZER, GPIO.HIGH)
+                    time.sleep(0.2)
+                    GPIO.output(BUZZER, GPIO.LOW)
+                    time.sleep(0.2)
+                    GPIO.output(BUZZER, GPIO.HIGH)
+                    time.sleep(0.2)
+                    GPIO.output(BUZZER, GPIO.LOW)
+                    time.sleep(0.2)
+                    GPIO.output(BUZZER, GPIO.HIGH)
+                    time.sleep(0.2)
+                    GPIO.output(BUZZER, GPIO.LOW)
+                    time.sleep(5)
+                # マニュアル鳴動
+                if (self.manualBuzzerTime != 0.0):
+                    GPIO.output(BUZZER, GPIO.HIGH)
+                    time.sleep(self.manualBuzzerTime)
+                    GPIO.output(BUZZER, GPIO.LOW)
+                    self.manualBuzzerTime = 0.0
+        except:
+            import traceback
+            traceback.print_exc()                    
 
     #   スレッド終了用関数
     def endThread(self):
@@ -426,6 +437,10 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print('Program cancelled!!')
+
+    except :
+        import traceback
+        traceback.print_exc()
 
     finally:
         # 終了処理
